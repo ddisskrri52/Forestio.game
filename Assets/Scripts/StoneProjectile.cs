@@ -18,6 +18,14 @@ public sealed class ForestioStoneProjectile : MonoBehaviour
     private bool bouncing;
     private bool finished;
 
+    public bool CanHitTarget => launched && !finished;
+
+    public void ConsumeOnHit()
+    {
+        if (CanHitTarget)
+            Finish();
+    }
+
     private void Awake()
     {
         body = GetComponent<Rigidbody2D>();
