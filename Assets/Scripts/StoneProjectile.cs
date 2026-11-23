@@ -96,6 +96,10 @@ public sealed class ForestioStoneProjectile : MonoBehaviour
             return;
         }
 
+        ForestioBranchBarrier barrier = collision.collider.GetComponentInParent<ForestioBranchBarrier>();
+        if (barrier != null && barrier.TryBreak(this))
+            return;
+
         // An upward-facing contact is a landing, including at a wall corner.
         for (int i = 0; i < collision.contactCount; i++)
         {
@@ -167,6 +171,9 @@ public sealed class ForestioStoneProjectile : MonoBehaviour
         if (nearest >= 0)
         {
             body.position = origin + path.normalized * Mathf.Max(0f, nearestDistance - 0.01f);
+            ForestioBranchBarrier barrier = spawnHits[nearest].collider.GetComponentInParent<ForestioBranchBarrier>();
+            if (barrier != null && barrier.TryBreak(this))
+                return;
             ReactToSurface(spawnHits[nearest].normal);
         }
     }
