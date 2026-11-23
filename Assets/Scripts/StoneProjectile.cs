@@ -19,6 +19,7 @@ public sealed class ForestioStoneProjectile : MonoBehaviour
     private bool finished;
 
     public bool CanHitTarget => launched && !finished;
+    public bool IsCharged { get; private set; }
 
     public void ConsumeOnHit()
     {
@@ -39,8 +40,9 @@ public sealed class ForestioStoneProjectile : MonoBehaviour
         body.interpolation = RigidbodyInterpolation2D.Interpolate;
     }
 
-    public void Launch(float direction, float speed, float distance, Transform owner = null)
+    public void Launch(float direction, float speed, float distance, Transform owner = null, bool charged = false)
     {
+        IsCharged = charged;
         flightDirection = direction < 0f ? -1f : 1f;
         flightSpeed = Mathf.Max(0.1f, speed);
         expiresAt = Time.time + Mathf.Max(0.1f, distance) / flightSpeed;
