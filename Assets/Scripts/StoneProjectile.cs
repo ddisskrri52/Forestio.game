@@ -96,6 +96,13 @@ public sealed class ForestioStoneProjectile : MonoBehaviour
             return;
         }
 
+        ForestioRobotController robot = collision.collider.GetComponentInParent<ForestioRobotController>();
+        if (robot != null)
+        {
+            HitRobot(robot);
+            return;
+        }
+
         ForestioBranchBarrier barrier = collision.collider.GetComponentInParent<ForestioBranchBarrier>();
         if (barrier != null && barrier.TryBreak(this))
             return;
@@ -171,11 +178,27 @@ public sealed class ForestioStoneProjectile : MonoBehaviour
         if (nearest >= 0)
         {
             body.position = origin + path.normalized * Mathf.Max(0f, nearestDistance - 0.01f);
+            ForestioRobotController robot = spawnHits[nearest].collider.GetComponentInParent<ForestioRobotController>();
+            if (robot != null)
+            {
+                HitRobot(robot);
+                return;
+            }
             ForestioBranchBarrier barrier = spawnHits[nearest].collider.GetComponentInParent<ForestioBranchBarrier>();
             if (barrier != null && barrier.TryBreak(this))
                 return;
             ReactToSurface(spawnHits[nearest].normal);
         }
+    }
+
+    private void HitRobot(ForestioRobotController robot)
+    {
+        if (!CanHitTarget || robot.IsDisabled) return;
+        robot.DisableRobot();
+        if (!IsCharged)
+            Finish();
+        else if (!bouncing)
+            body.linearVelocity = new Vector2(flightDirection * flightSpeed, 0f);
     }
 
     private void Finish()
