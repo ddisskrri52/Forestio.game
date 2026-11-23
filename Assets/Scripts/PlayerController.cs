@@ -26,7 +26,12 @@ public sealed class ForestioPlayerController : MonoBehaviour
     private float moveInput;
     private bool jumpRequested;
 
+    [Header("Ability")]
+    [SerializeField] private bool chargedThrowUnlocked;
+    private int ignoreInputThroughFrame = -1;
+
     public bool HasStone { get; private set; }
+    public bool HasChargedThrow => chargedThrowUnlocked;
 
     private void Awake()
     {
@@ -34,6 +39,7 @@ public sealed class ForestioPlayerController : MonoBehaviour
         visual = GetComponentInChildren<SpriteRenderer>();
 
         HasStone = false;
+        chargedThrowUnlocked = false;
         if (heldStone != null)
         {
             heldStone.SetActive(false);
@@ -49,7 +55,7 @@ public sealed class ForestioPlayerController : MonoBehaviour
     private void Update()
     {
         Keyboard keyboard = Keyboard.current;
-        if (keyboard == null || !Application.isFocused || Time.timeScale == 0f)
+        if (keyboard == null || !Application.isFocused || Time.timeScale == 0f || Time.frameCount <= ignoreInputThroughFrame)
         {
             moveInput = 0f;
             jumpRequested = false;
@@ -159,6 +165,21 @@ public sealed class ForestioPlayerController : MonoBehaviour
         if (heldStone != null)
             heldStone.SetActive(false);
         return true;
+    }
+
+    public bool UnlockChargedThrow()
+    {
+        if (chargedThrowUnlocked)
+            return false;
+        chargedThrowUnlocked = true;
+        return true;
+    }
+
+    public void ClearPendingInput()
+    {
+        moveInput = 0f;
+        jumpRequested = false;
+        ignoreInputThroughFrame = Time.frameCount;
     }
 
     private void OnDisable()
