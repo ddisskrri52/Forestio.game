@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 public sealed class ForestioHud : MonoBehaviour
 {
@@ -8,112 +9,80 @@ public sealed class ForestioHud : MonoBehaviour
     [SerializeField] private ForestioBranchBarrier branches;
     [SerializeField] private ForestioAbilityNotice notice;
     [SerializeField] private ForestioLevelCompletion completion;
-    private GUIStyle label;
-    private GUIStyle small;
-    private GUIStyle heading;
-    private GUIStyle centered;
-
+    [SerializeField] private Sprite heartIcon;
+    [SerializeField] private Sprite stoneIcon;
+    private RectTransform canvas;
+    private Image healthPanel, goalPanel, hintPanel, stone;
+    private readonly Image[] hearts = new Image[3];
+    private Text goal, hint;
+    private Vector3 initialPosition;
+    private Rigidbody2D body;
+    private bool moved, jumped, threw, previouslyHeldStone;
     public bool PickupHintVisible => player != null && player.CanPickUpStone && Time.timeScale > 0f
         && (notice == null || !notice.IsOpen) && (completion == null || !completion.IsCompleted);
-    public string ObjectiveText
+    public string ObjectiveText => branches != null && branches.IsBroken ? "До телепорту ←"
+        : player != null && player.HasChargedThrow ? "Повернися до гілок ←"
+        : button != null && button.IsActivated ? "Знайди жовтий модуль →" : "Знайди кнопку ↑ →";
+    private void Start()
     {
-        get
-        {
-            if (branches != null && branches.IsBroken) return "Пройди ліворуч до м’ятного телепорту.";
-            if (player != null && player.HasChargedThrow) return "Повернися ліворуч і зруйнуй сухі гілки.";
-            if (button != null && button.IsActivated) return "Пройди крізь двері та знайди жовтий модуль.";
-            return "Знайди кнопку на верхній гілці праворуч.";
-        }
+        initialPosition = player.transform.position;
+        body = player.GetComponent<Rigidbody2D>();
+        canvas = ForestioUi.Root(transform, "CompactHud", 500);
+        healthPanel = ForestioUi.Panel(canvas, "Health", ForestioUi.Cream);
+        for (int i = 0; i < 3; i++) hearts[i] = ForestioUi.Picture(canvas, "Heart" + i, heartIcon, Color.white);
+        stone = ForestioUi.Picture(canvas, "HeldStone", stoneIcon, Color.white);
+        goalPanel = ForestioUi.Panel(canvas, "Goal", ForestioUi.Cream);
+        goal = ForestioUi.Label(canvas, "Objective", 20);
+        hintPanel = ForestioUi.Panel(canvas, "SingleHint", ForestioUi.Cream);
+        hint = ForestioUi.Label(canvas, "HintText", 19);
     }
-
-    private void OnGUI()
+    private void LateUpdate()
     {
-        if (player == null || health == null || Time.timeScale == 0f
-            || (notice != null && notice.IsOpen) || (completion != null && completion.IsCompleted)) return;
-        EnsureStyles();
-        Matrix4x4 previousMatrix = GUI.matrix;
-        Color previousColor = GUI.color;
-        try
+        if (canvas == null) return;
+        bool visible = Time.timeScale > 0f && (notice == null || !notice.IsOpen) && (completion == null || !completion.IsCompleted);
+        canvas.gameObject.SetActive(visible);
+        if (!visible) return;
+        moved |= Mathf.Abs(player.transform.position.x - initialPosition.x) > 0.7f;
+        jumped |= body != null && body.linearVelocity.y > 1f;
+        threw |= previouslyHeldStone && !player.HasStone && !health.IsDefeated;
+        previouslyHeldStone = player.HasStone;
+        float s = ForestioUi.Scale;
+        ForestioUi.Place(healthPanel.rectTransform, new Rect(14f * s, 14f * s, 150f * s, 44f * s));
+        for (int i = 0; i < 3; i++)
         {
-            float scale = Mathf.Max(0.1f, Mathf.Min(Screen.width / 1280f, Screen.height / 720f));
-            float width = Screen.width / scale;
-            float height = Screen.height / scale;
-            GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(scale, scale, 1f));
-            Panel(new Rect(18f, 18f, 300f, 112f));
-            GUI.Label(new Rect(32f, 27f, 130f, 26f), "Здоров’я", heading);
-            for (int i = 0; i < ForestioPlayerHealth.MaxHealth; i++)
-            {
-                GUI.color = i < health.CurrentHealth ? new Color(0.91f, 0.43f, 0.61f) : new Color(0.77f, 0.73f, 0.79f);
-                GUI.DrawTexture(new Rect(32f + i * 35f, 61f, 28f, 15f), Texture2D.whiteTexture);
-            }
-            GUI.color = Color.white;
-            GUI.Label(new Rect(151f, 54f, 130f, 28f), health.CurrentHealth + " / 3 HP", label);
-            GUI.Label(new Rect(32f, 88f, 272f, 27f), player.HasStone ? "Камінець у пащі" : "Камінця немає", small);
-            Panel(new Rect(width - 458f, 18f, 440f, 112f));
-            GUI.Label(new Rect(width - 444f, 27f, 412f, 26f), "Шлях додому", heading);
-            GUI.Label(new Rect(width - 444f, 59f, 412f, 57f), ObjectiveText, label);
-
-            string controls = "A/D або ←/→ — рух     Space — стрибок     E — взяти камінець     ЛКМ/F — кидок";
-            if (player.HasChargedThrow) controls += "\nЗаряджений кидок: утримуй ЛКМ/F 0,7 с і відпусти.";
-            Panel(new Rect(18f, height - 72f, width - 36f, 54f));
-            GUI.Label(new Rect(31f, height - 68f, width - 62f, 48f), controls, small);
-            string context = ContextHint();
-            if (!string.IsNullOrEmpty(context))
-            {
-                Panel(new Rect((width - 700f) / 2f, height - 146f, 700f, 60f));
-                GUI.Label(new Rect((width - 674f) / 2f, height - 140f, 674f, 48f), context, centered);
-            }
-            if (PickupHintVisible && Camera.main != null)
-            {
-                Transform pile = player.NearbyStonePile;
-                if (pile != null)
-                {
-                    Vector3 screen = Camera.main.WorldToScreenPoint(pile.position + Vector3.up * 0.95f);
-                    if (screen.z > 0f)
-                    {
-                        float x = Mathf.Clamp(screen.x / scale - 110f, 18f, width - 238f);
-                        float y = Mathf.Clamp((Screen.height - screen.y) / scale, 145f, height - 190f);
-                        Panel(new Rect(x, y, 220f, 36f));
-                        GUI.Label(new Rect(x + 5f, y + 2f, 210f, 32f), "E — взяти камінець", centered);
-                    }
-                }
-            }
+            ForestioUi.Place(hearts[i].rectTransform, new Rect((24f + i * 30f) * s, 23f * s, 25f * s, 25f * s));
+            hearts[i].color = i < health.CurrentHealth ? Color.white : new Color(0.5f, 0.45f, 0.55f, 0.28f);
         }
-        finally { GUI.matrix = previousMatrix; GUI.color = previousColor; }
+        ForestioUi.Place(stone.rectTransform, new Rect(123f * s, 26f * s, 20f * s, 20f * s));
+        stone.color = player.HasStone ? Color.white : new Color(0.6f, 0.55f, 0.65f, 0.25f);
+        Rect goalRect = new Rect(Screen.width - 284f * s, 14f * s, 270f * s, 44f * s);
+        ForestioUi.Place(goalPanel.rectTransform, goalRect); ForestioUi.Place(goal.rectTransform, goalRect);
+        goal.fontSize = Mathf.Max(15, Mathf.RoundToInt(20f * s)); goal.text = ObjectiveText;
+        string active = ActiveHint();
+        bool showHint = !string.IsNullOrEmpty(active);
+        hintPanel.gameObject.SetActive(showHint); hint.gameObject.SetActive(showHint);
+        if (!showHint) return;
+        hint.fontSize = Mathf.Max(15, Mathf.RoundToInt(19f * s)); hint.text = active;
+        float width = Mathf.Min(Screen.width - 28f * s, hint.preferredWidth + 34f * s);
+        hint.rectTransform.sizeDelta = new Vector2(width - 24f * s, 100f);
+        float height = hint.preferredHeight + 18f * s;
+        Rect panel = new Rect((Screen.width - width) * 0.5f, Screen.height - height - 14f * s, width, height);
+        ForestioUi.Place(hintPanel.rectTransform, panel);
+        ForestioUi.Place(hint.rectTransform, new Rect(panel.x + 12f * s, panel.y + 7f * s, panel.width - 24f * s, panel.height - 14f * s));
     }
-
-    private string ContextHint()
+    private string ActiveHint()
     {
-        Vector3 position = player.transform.position;
-        if (branches != null && !branches.IsBroken && Time.time - branches.LastNormalHitTime < 2.5f)
-            return "Звичайного кидка недостатньо. Знайди модуль зарядженого кидка.";
-        if (branches != null && !branches.IsBroken && Vector2.Distance(position, branches.transform.position - Vector3.up * 2.5f) < 3f)
-            return player.HasChargedThrow ? "Дивись у бік гілок. Утримуй ЛКМ/F 0,7 с і відпусти." : "Сухі гілки перекривають шлях. Досліди іншу гілку рівня.";
-        if (button != null && !button.IsActivated && Vector2.Distance(position, button.transform.position) < 3f)
-            return "Влуч камінцем у рожеву кнопку, щоб відкрити двері.";
-        if (position.x > 9.5f && position.x < 15.5f && position.y < 0f)
-            return "Перестрибни яму. Камінцем можна вимкнути робота на іншому боці.";
-        if (position.x > -10.6f && position.x < -7f && position.y < -1f)
-            return "Space — перестрибни рожеві шипи. Дотик забирає 1 HP.";
-        if (position.x < -12f && position.y < 0f && !player.HasChargedThrow)
-            return "Котик прокинувся всередині старої гри. Допоможи йому знайти шлях додому!";
+        if (branches != null && !branches.IsBroken && Time.time - branches.LastNormalHitTime < 2.5f) return "Потрібен заряджений кидок. Знайди модуль.";
+        if (PickupHintVisible) return "E — взяти камінець";
+        if (!moved) return "Рух — A/D або ←/→";
+        Vector3 p = player.transform.position;
+        if (!jumped && p.x < -10.5f) return "Стрибок — Space";
+        if (branches != null && !branches.IsBroken && Vector2.Distance(p, branches.transform.position - Vector3.up * 2.5f) < 3f)
+            return player.HasChargedThrow ? "Утримуй ЛКМ/F 0,7 с і відпусти в бік гілок." : "Шлях закритий. Досліди гілку праворуч.";
+        if (button != null && !button.IsActivated && Vector2.Distance(p, button.transform.position) < 3f) return "ЛКМ/F — влуч камінцем у кнопку.";
+        if (p.x > -10.6f && p.x < -7f && p.y < -1f) return "Space — перестрибни шипи.";
+        if (p.x > 10f && p.x < 15f && p.y < 0f) return "Space — перестрибни яму.";
+        if (player.HasStone && !threw && p.x < -10.5f) return "Кинути камінець — ЛКМ або F";
         return null;
-    }
-
-    private void EnsureStyles()
-    {
-        if (label != null) return;
-        Color ink = new Color(0.23f, 0.16f, 0.29f);
-        label = new GUIStyle(GUI.skin.label) { fontSize = 19, wordWrap = true };
-        label.normal.textColor = ink;
-        small = new GUIStyle(label) { fontSize = 17 };
-        heading = new GUIStyle(label) { fontSize = 20, fontStyle = FontStyle.Bold };
-        centered = new GUIStyle(label) { alignment = TextAnchor.MiddleCenter };
-    }
-    private static void Panel(Rect rect)
-    {
-        GUI.color = new Color(1f, 0.96f, 0.98f, 0.94f);
-        GUI.DrawTexture(rect, Texture2D.whiteTexture);
-        GUI.color = Color.white;
     }
 }

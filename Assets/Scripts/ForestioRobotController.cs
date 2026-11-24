@@ -63,6 +63,7 @@ public sealed class ForestioRobotController : MonoBehaviour
         else
             body.linearVelocity = new Vector2(direction * patrolSpeed, body.linearVelocity.y);
 
+        if (visual != null) visual.flipX = direction < 0f;
         if (eye != null)
         {
             Vector3 position = eye.transform.localPosition;

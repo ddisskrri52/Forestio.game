@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 
 public sealed class ForestioAbilityNotice : MonoBehaviour
 {
@@ -7,137 +8,70 @@ public sealed class ForestioAbilityNotice : MonoBehaviour
     private ForestioPlayerController player;
     private float openedAt;
     private float previousTimeScale = 1f;
-    private Texture2D overlayTexture;
-    private Texture2D panelTexture;
-    private Texture2D buttonTexture;
-    private GUIStyle panelStyle;
-    private GUIStyle titleStyle;
-    private GUIStyle bodyStyle;
-    private GUIStyle footerStyle;
-    private GUIStyle buttonStyle;
-
+    private RectTransform canvas;
+    private Image shade, panel;
+    private Text title, body, shortcut;
+    private Button continueButton;
     public bool IsOpen { get; private set; }
 
     public bool Show(ForestioPlayerController target)
     {
-        if (IsOpen || target == null)
-            return false;
-
-        player = target;
-        player.ClearPendingInput();
+        if (IsOpen || target == null) return false;
+        player = target; player.ClearPendingInput();
         previousTimeScale = Time.timeScale;
-        openedAt = Time.unscaledTime;
-        IsOpen = true;
-        Time.timeScale = 0f;
+        openedAt = Time.unscaledTime; IsOpen = true; Time.timeScale = 0f;
+        if (canvas == null)
+        {
+            canvas = ForestioUi.Root(transform, "AbilityPopup", 800);
+            shade = ForestioUi.Picture(canvas, "Shade", null, new Color(0.15f, 0.08f, 0.2f, 0.55f));
+            panel = ForestioUi.Panel(canvas, "Panel", ForestioUi.Cream);
+            title = ForestioUi.Label(canvas, "Title", 25, TextAnchor.MiddleCenter, true);
+            title.text = "Заряджений кидок відкрито!";
+            body = ForestioUi.Label(canvas, "Explanation", 20);
+            body.text = "Утримуй ЛКМ або F 0,7 с і відпусти.\nЦей кидок руйнує сухі гілки.";
+            continueButton = ForestioUi.Button(canvas, "Continue", "Продовжити");
+            continueButton.onClick.AddListener(() => TryClose());
+            shortcut = ForestioUi.Label(canvas, "CloseKeys", 16);
+            shortcut.text = "E або Space";
+        }
+        canvas.gameObject.SetActive(true);
+        UpdateUi();
         return true;
     }
-
     private void Update()
     {
-        if (!IsOpen || !Application.isFocused)
-            return;
-
+        if (!IsOpen) return;
+        UpdateUi();
+        if (!Application.isFocused) return;
         Keyboard keyboard = Keyboard.current;
-        if (keyboard != null && (keyboard.eKey.wasPressedThisFrame || keyboard.spaceKey.wasPressedThisFrame))
-            TryClose();
+        if (keyboard != null && (keyboard.eKey.wasPressedThisFrame || keyboard.spaceKey.wasPressedThisFrame)) TryClose();
     }
-
+    private void UpdateUi()
+    {
+        float s = ForestioUi.Scale;
+        ForestioUi.Place(shade.rectTransform, new Rect(0f, 0f, Screen.width, Screen.height));
+        float width = Mathf.Min(580f * s, Screen.width - 28f);
+        Rect rect = new Rect((Screen.width - width) * 0.5f, (Screen.height - 240f * s) * 0.5f, width, 240f * s);
+        ForestioUi.Place(panel.rectTransform, rect);
+        ForestioUi.Place(title.rectTransform, new Rect(rect.x + 16f * s, rect.y + 18f * s, width - 32f * s, 34f * s));
+        ForestioUi.Place(body.rectTransform, new Rect(rect.x + 20f * s, rect.y + 65f * s, width - 40f * s, 64f * s));
+        ForestioUi.Place(continueButton.GetComponent<RectTransform>(), new Rect(rect.center.x - 105f * s, rect.y + 149f * s, 210f * s, 42f * s));
+        ForestioUi.Place(shortcut.rectTransform, new Rect(rect.x + 20f * s, rect.y + 199f * s, width - 40f * s, 24f * s));
+        continueButton.interactable = Time.unscaledTime - openedAt >= CloseDelay;
+    }
     public bool TryClose()
     {
-        if (!IsOpen || Time.unscaledTime - openedAt < CloseDelay)
-            return false;
-
-        ResumeGame();
-        return true;
+        if (!IsOpen || Time.unscaledTime - openedAt < CloseDelay) return false;
+        ResumeGame(); return true;
     }
-
     private void ResumeGame()
     {
-        if (!IsOpen)
-            return;
-
-        IsOpen = false;
-        Time.timeScale = previousTimeScale;
-        if (player != null)
-            player.ClearPendingInput();
+        if (!IsOpen) return;
+        IsOpen = false; Time.timeScale = previousTimeScale;
+        if (canvas != null) canvas.gameObject.SetActive(false);
+        if (player != null) player.ClearPendingInput();
         player = null;
     }
-
-    private void OnGUI()
-    {
-        if (!IsOpen)
-            return;
-
-        EnsureStyles();
-        Matrix4x4 oldMatrix = GUI.matrix;
-        bool oldEnabled = GUI.enabled;
-        try
-        {
-            GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), overlayTexture);
-            float scale = Mathf.Max(0.1f, Mathf.Min(Screen.width / 800f, Screen.height / 450f));
-            GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(scale, scale, 1f));
-            Rect panel = new Rect((Screen.width / scale - 620f) / 2f, (Screen.height / scale - 290f) / 2f, 620f, 290f);
-            GUI.Box(panel, GUIContent.none, panelStyle);
-            GUI.Label(new Rect(panel.x + 32f, panel.y + 25f, 556f, 45f), "Заряджений кидок відкрито!", titleStyle);
-            GUI.Label(new Rect(panel.x + 40f, panel.y + 85f, 540f, 90f),
-                "Утримуй ЛКМ або F протягом 0,7 с і відпусти.\nЗаряджений камінець руйнує сухі гілки.", bodyStyle);
-            bool canClose = Time.unscaledTime - openedAt >= CloseDelay;
-            GUI.Label(new Rect(panel.x + 40f, panel.y + 173f, 540f, 27f),
-                canClose ? "Продовжити — E або Space" : "Нову здібність отримано…", footerStyle);
-            GUI.enabled = canClose;
-            if (GUI.Button(new Rect(panel.x + 160f, panel.y + 218f, 300f, 45f), "Продовжити", buttonStyle))
-                TryClose();
-        }
-        finally
-        {
-            GUI.matrix = oldMatrix;
-            GUI.enabled = oldEnabled;
-        }
-    }
-
-    private void EnsureStyles()
-    {
-        if (panelStyle != null)
-            return;
-
-        overlayTexture = MakeTexture(new Color(0.08f, 0.04f, 0.13f, 0.68f));
-        panelTexture = MakeTexture(new Color(1f, 0.95f, 0.96f));
-        buttonTexture = MakeTexture(new Color(0.96f, 0.7f, 0.81f));
-        Color ink = new Color(0.2f, 0.12f, 0.25f);
-        panelStyle = new GUIStyle(GUI.skin.box);
-        panelStyle.normal.background = panelTexture;
-        titleStyle = new GUIStyle(GUI.skin.label) { fontSize = 25, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter, wordWrap = true };
-        titleStyle.normal.textColor = ink;
-        bodyStyle = new GUIStyle(GUI.skin.label) { fontSize = 20, alignment = TextAnchor.MiddleCenter, wordWrap = true };
-        bodyStyle.normal.textColor = ink;
-        footerStyle = new GUIStyle(bodyStyle) { fontSize = 17 };
-        buttonStyle = new GUIStyle(GUI.skin.button) { fontSize = 20, fontStyle = FontStyle.Bold };
-        buttonStyle.normal.background = buttonTexture;
-        buttonStyle.normal.textColor = ink;
-        buttonStyle.hover.background = buttonTexture;
-        buttonStyle.hover.textColor = ink;
-        buttonStyle.active.background = buttonTexture;
-        buttonStyle.active.textColor = ink;
-    }
-
-    private static Texture2D MakeTexture(Color color)
-    {
-        Texture2D texture = new Texture2D(1, 1);
-        texture.SetPixel(0, 0, color);
-        texture.Apply();
-        return texture;
-    }
-
-    private void OnDisable()
-    {
-        ResumeGame();
-    }
-
-    private void OnDestroy()
-    {
-        ResumeGame();
-        if (overlayTexture != null) Destroy(overlayTexture);
-        if (panelTexture != null) Destroy(panelTexture);
-        if (buttonTexture != null) Destroy(buttonTexture);
-    }
+    private void OnDisable() => ResumeGame();
+    private void OnDestroy() => ResumeGame();
 }

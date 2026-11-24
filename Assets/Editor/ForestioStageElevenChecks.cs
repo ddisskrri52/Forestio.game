@@ -193,6 +193,8 @@ public static class ForestioStageElevenChecks
                     health.ReturnFromHazard();
                     Require(health.CurrentHealth == hp && !health.IsReturningFromHazard, "Hazard interrupted ending.");
                     Require(!ending.TryComplete(player), "Ending triggered twice.");
+                    ForestioHomeEnding home = UnityEngine.Object.FindFirstObjectByType<ForestioHomeEnding>();
+                    if (home != null) Require(home.HasStarted && !home.IsReady, "Home cutscene did not begin before restart became available.");
                     if (SessionState.GetBool(RestartCheckKey, false))
                     {
                         Require(player.HasStone, "Restart inventory check has no held stone.");
@@ -216,6 +218,25 @@ public static class ForestioStageElevenChecks
         Require(center.x - width >= -19.51f && center.x + width <= 23.51f
             && center.y - height >= -4.01f && center.y + height <= 10.01f, "Camera crossed level bounds.");
     }
+    private static void ClickUiButton(UnityEngine.UI.Button target)
+    {
+        Canvas.ForceUpdateCanvases();
+        var events = UnityEngine.EventSystems.EventSystem.current;
+        Require(events != null, "UI EventSystem is missing.");
+        RectTransform rect = target.GetComponent<RectTransform>();
+        Vector2 screen = RectTransformUtility.WorldToScreenPoint(Camera.main, rect.TransformPoint(rect.rect.center));
+        var pointer = new UnityEngine.EventSystems.PointerEventData(events)
+        {
+            position = screen,
+            button = UnityEngine.EventSystems.PointerEventData.InputButton.Left
+        };
+        var hits = new List<UnityEngine.EventSystems.RaycastResult>();
+        events.RaycastAll(pointer, hits);
+        Require(hits.Exists(hit => hit.gameObject == target.gameObject), "UI button is not reachable by pointer: " + target.name);
+        UnityEngine.EventSystems.ExecuteEvents.Execute(target.gameObject, pointer, UnityEngine.EventSystems.ExecuteEvents.pointerClickHandler);
+        Debug.Log("UI_POINTER_CLICK_OK: " + target.name);
+    }
+
     private static void CheckRestart()
     {
         if (restartStage == 1)
@@ -224,7 +245,14 @@ public static class ForestioStageElevenChecks
             if (!ending.CanRestart) return;
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/StoneProjectile.prefab");
             UnityEngine.Object.Instantiate(prefab, new Vector3(0f, 20f, 0f), Quaternion.identity);
-            Require(ending.TryRestart(), "Restart request rejected.");
+            UnityEngine.UI.Button replay = Array.Find(UnityEngine.Object.FindObjectsByType<UnityEngine.UI.Button>(FindObjectsInactive.Include, FindObjectsSortMode.None), item => item.name == "PlayAgain");
+            if (replay != null)
+            {
+                if (!replay.interactable) return;
+                ClickUiButton(replay);
+                Require(!ending.CanRestart, "Replay button did not request restart.");
+            }
+            else Require(ending.TryRestart(), "Restart request rejected.");
             Require(!ending.TryRestart(), "Duplicate restart request accepted.");
             restartStage = 2;
             return;
@@ -254,6 +282,12 @@ public static class ForestioStageElevenChecks
         Require(piles.Length == 3 && Array.TrueForAll(piles, pile => pile.IsAvailable), "Restart lost stone piles.");
         Require(!UnityEngine.Object.FindFirstObjectByType<ForestioAbilityNotice>().IsOpen, "Restart retained ability notice.");
         Require(UnityEngine.Object.FindFirstObjectByType<ForestioHud>().PickupHintVisible, "Restart did not restore starting pickup hint.");
+        ForestioHomeEnding freshHome = UnityEngine.Object.FindFirstObjectByType<ForestioHomeEnding>();
+        if (freshHome != null)
+        {
+            Require(!freshHome.HasStarted, "Restart retained ending cutscene state.");
+            Debug.Log("FORESTIO_STAGE14_PLAYCHECK_OK: forest level route, timed home reunion and complete restart verified.");
+        }
         Debug.Log("FORESTIO_STAGE13_PLAYCHECK_OK: contextual pickup hints, full route, ending delay and one-shot scene restart verified; HP, input, inventory, ability, button, door, module, branches, robot, food and projectiles reset.");
         SessionState.SetBool(RestartCheckKey, false);
         SessionState.SetBool(PortalCheckKey, false);
@@ -285,7 +319,13 @@ public static class ForestioStageElevenChecks
                 initialized = true;
             }
             Require(!health.IsDefeated, "Navigation caused defeat.");
-            if (notice.IsOpen) { notice.TryClose(); return; }
+            if (notice.IsOpen)
+            {
+                UnityEngine.UI.Button close = Array.Find(UnityEngine.Object.FindObjectsByType<UnityEngine.UI.Button>(FindObjectsInactive.Include, FindObjectsSortMode.None), item => item.name == "Continue");
+                if (close == null) notice.TryClose();
+                else if (close.interactable) ClickUiButton(close);
+                return;
+            }
             if (command < Commands.Count)
             {
                 if (Commands[command]()) { body.linearVelocity = new Vector2(0f, body.linearVelocity.y); command++; }
