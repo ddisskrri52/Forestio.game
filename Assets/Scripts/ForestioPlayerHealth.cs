@@ -79,7 +79,8 @@ public sealed class ForestioPlayerHealth : MonoBehaviour
     public void ReturnFromHazard()
     {
         if (IsDefeated || IsReturningFromHazard || Time.timeScale == 0f) return;
-        if (!IsInvulnerable) CurrentHealth--;
+        bool tookDamage = !IsInvulnerable;
+        if (tookDamage) CurrentHealth--;
         player.ClearPendingInput();
         if (CurrentHealth == 0)
         {
@@ -89,10 +90,10 @@ public sealed class ForestioPlayerHealth : MonoBehaviour
         IsReturningFromHazard = true;
         body.linearVelocity = Vector2.zero;
         body.simulated = false;
-        StartCoroutine(ReturnToSafePoint());
+        StartCoroutine(ReturnToSafePoint(tookDamage));
     }
 
-    private IEnumerator ReturnToSafePoint()
+    private IEnumerator ReturnToSafePoint(bool tookDamage)
     {
         yield return FadeTo(1f, 0.15f);
         ForestioSafePoint safePoint = GetComponent<ForestioSafePoint>();
@@ -103,7 +104,9 @@ public sealed class ForestioPlayerHealth : MonoBehaviour
         body.simulated = true;
         body.linearVelocity = Vector2.zero;
         IsReturningFromHazard = false;
-        invulnerableUntil = Time.time + 1f;
+        // A harmless return must not restart protection, or holding movement into
+        // spikes would keep extending invulnerability indefinitely.
+        if (tookDamage) invulnerableUntil = Time.time + 1f;
         movementLockedUntil = Time.time;
         player.ClearPendingInput();
     }
