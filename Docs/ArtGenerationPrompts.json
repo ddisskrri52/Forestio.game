@@ -1,0 +1,29 @@
+{
+  "mode": "built-in image_gen",
+  "prompts": [
+    [
+      "forest",
+      "Use case: illustration-story. Asset type: finished background illustration for a Unity 2D side-scrolling game Forestio. Create a lush, strongly atmospheric, whimsical CARTOON forest, gentle pastel rose pink and lavender round tree canopies, muted mint and sage foliage, warm peach light, plum tree trunks, soft drifting haze and softly lit clearing. Wide panoramic landscape composition, layered organic silhouettes, whimsical but mature, polished storybook game art, subtle crisp cel shading compatible with a small pixel-art black cat. Low contrast and light value in central playable area so a dark character stays very readable. Continuous forest background only: no playable platforms, no ground cross section, no characters, no objects to interact with, no interface, no writing. Trees extend beyond the canvas edges, soft magical daylight, rich atmosphere without horror. Avoid ruins, stone walls, buildings, black shadows, clutter, neon saturation, photorealism."
+    ],
+    [
+      "atlas",
+      "Use case: illustration-story. Asset type: ONE production sprite atlas for a 2D pastel cartoon forest platform game. Square image with EXACTLY 4 columns by 4 rows of equal square cells. Transparent background, no grid lines, no captions. Every isolated sprite centered in its own cell, separated from other cells by generous transparent margins, no overlap. Polished soft cel-shaded storybook game art with plum outlines, pastel pink/lavender/mint, readable silhouettes. Cell contents left to right, top to bottom: ROW 1: (1) square cutaway EARTH platform with a flat grassy mint top and warm muted mauve-brown soil below, straight top suitable for stretching into a walkable platform, no stones; (2) rounded lavender flowering bush; (3) full pink round-canopy forest tree with plum trunk; (4) full lavender round-canopy forest tree. ROW 2: (1) vertical tangled dry brown twig barrier; (2) vertical wooden gate intertwined with vines, no stone; (3) small friendly-looking squat blue-lavender patrol robot with one rose eye and two small feet, side view; (4) pile of three round gray-lavender pebbles. ROW 3: (1) one round gray-lavender throwing pebble; (2) glowing rose circular button mounted on a short wooden base, side view; (3) glowing small golden leaf-shaped ability crystal; (4) vertical mint magical portal ring. ROW 4: (1) clearly dangerous cluster of triangular pink thorns with dark plum outlines, all tips aligned at a flat upper line; (2) small mint grass tuft with pink flowers; (3) single rounded pink health heart icon; (4) small warm peach fish-shaped cat treat. Transparent alpha throughout all empty space. No characters other than the robot, no cats, no text, no checkerboard baked into image. This is one aligned sprite atlas, not a screenshot."
+    ],
+    [
+      "home",
+      "Use case: illustration-story. Asset type: finished wide background for a short 2D game ending cutscene in Forestio. A warm cozy family living room in the same pastel storybook cartoon style as a magical pink forest. Lavender and blush walls, peach afternoon light through a window with greenery outside, a round cream rug and low wooden floor across the LOWER THIRD. On the RIGHT half, a parent and a child sit together on a soft rose sofa, friendly simple stylized figures with understated faces, space on the rug directly in front of them for a returning cat. On the LEFT, a closed wooden door and a little old video-game console near a shelf. Large clear unobstructed floor path from left edge to the family on the right; no table obstructing that path. Side-on scene framing, comfortable readable silhouettes, soft rounded shapes, warm reunion mood, mint and plum accents. Entire room visible, polished game illustration, landscape composition, no cats or other animals painted in, no text, no interface, no logos, no watermark."
+    ]
+  ],
+  "sleep": "Use case: identity-preserve. Asset type: a transparent 2D ending sprite for the same adult black cat in the reference image. Reference image is the character identity, not a background to preserve. Draw ONLY this same adult 2–4 year old black cat with charcoal-plum fur, lavender highlights and small pink inner ears, curled comfortably on its side in a resting/sleeping pose, eyes gently closed, tail curled around body, mature adult proportions, not a baby kitten. Side view, softly outlined clean cartoon/pixel-inspired game sprite consistent with the reference character, entire curled body and tail visible, horizontal composition, no scene, no floor, no cast shadow, no objects, no lettering. Real transparent alpha background; preserve black fur rather than making it transparent.",
+  "assets": {
+    "forest": "Assets/Art/Forest/ForestBackdrop.png",
+    "atlas": "Assets/Art/Forest/EnvironmentAtlas.png",
+    "home": "Assets/Art/Ending/HomeRoom.png",
+    "sleep": "Assets/Art/Ending/CatResting.png"
+  },
+  "references": {
+    "sleep": [
+      "Assets/Art/Player/exec-c6aafdb1-2b73-4c5a-b4b8-5a7ca67a5211.png"
+    ]
+  }
+}
