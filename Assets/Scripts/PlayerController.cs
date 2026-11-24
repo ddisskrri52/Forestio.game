@@ -44,6 +44,8 @@ public sealed class ForestioPlayerController : MonoBehaviour
     [SerializeField] private bool chargedThrowUnlocked;
     private int ignoreInputThroughFrame = -1;
 
+    public event System.Action StoneThrown;
+    public bool IsOnGround => IsGrounded();
     public bool HasStone { get; private set; }
     public bool HasChargedThrow => chargedThrowUnlocked;
     public bool IsCharging => isCharging;
@@ -240,6 +242,7 @@ public sealed class ForestioPlayerController : MonoBehaviour
             charged ? chargedThrowDistance : throwDistance,
             transform, charged);
         TryConsumeStone();
+        StoneThrown?.Invoke();
     }
 
     public bool TryConsumeStone()

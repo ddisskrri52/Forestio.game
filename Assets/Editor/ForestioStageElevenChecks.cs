@@ -22,6 +22,8 @@ public static class ForestioStageElevenChecks
     private static int command;
     private static double timeout;
     private static bool initialized;
+    private static readonly HashSet<int> CatFrames = new HashSet<int>();
+    private static readonly HashSet<int> RobotFrames = new HashSet<int>();
     private const string RestartCheckKey = "Forestio.Stage13.CheckRestart";
     private static int restartStage;
     private static int oldPlayerId;
@@ -134,8 +136,10 @@ public static class ForestioStageElevenChecks
         Move("button first step", 3f, -1f);
         Move("button second step", 6f, 0.5f);
         Move("button landing", 8f, 2f);
-        Throw(false, false); Wait(0.3f);
-        Do(() => Require(button.IsActivated && !GameObject.Find("Door"), "Button did not open module route."));
+        Throw(false, false); Wait(0.65f);
+        Do(() => Require(button.IsActivated && UnityEngine.Object.FindFirstObjectByType<ForestioVineGate>().IsOpen, "Button did not open module route."));
+        Move("descend from button", 6f, 0.5f);
+        Move("return to lower junction", 0.2f, -2.5f);
         Move("third pile before pit", 11f, -2.5f); Pickup();
         Do(() => robot.ResetAfterDefeat());
         Throw(false, false); Wait(0.8f);
@@ -269,6 +273,9 @@ public static class ForestioStageElevenChecks
         Require(Mathf.Abs(fresh.transform.position.x + 14.5f) < 0.05f, "Restart missed level start.");
         Require(!completion.IsCompleted && !completion.CanRestart && !completion.TryRestart(), "Restart available outside ending.");
         Require(!UnityEngine.Object.FindFirstObjectByType<ForestioHitButton>().IsActivated && GameObject.Find("Door") != null, "Restart retained open door.");
+        var freshGate = UnityEngine.Object.FindFirstObjectByType<ForestioVineGate>();
+        if (freshGate != null) Require(!freshGate.IsOpen && freshGate.GetComponent<Collider2D>().enabled
+            && freshGate.left.gameObject.activeSelf && freshGate.right.gameObject.activeSelf, "Restart failed to close vine gate.");
         ForestioBranchBarrier freshBranches = UnityEngine.Object.FindFirstObjectByType<ForestioBranchBarrier>();
         Require(freshBranches != null && !freshBranches.IsBroken && freshBranches.gameObject.activeSelf, "Restart retained broken branches.");
         ForestioAbilityModule module = UnityEngine.Object.FindFirstObjectByType<ForestioAbilityModule>();
@@ -318,6 +325,10 @@ public static class ForestioStageElevenChecks
                 PrepareRoute();
                 initialized = true;
             }
+            var animation = player.GetComponent<ForestioFrameAnimation>();
+            if (animation != null) CatFrames.Add(animation.CurrentFrame);
+            var robotAnimation = robot.GetComponent<ForestioFrameAnimation>();
+            if (robotAnimation != null) RobotFrames.Add(robotAnimation.CurrentFrame);
             Require(!health.IsDefeated, "Navigation caused defeat.");
             if (notice.IsOpen)
             {
@@ -330,6 +341,13 @@ public static class ForestioStageElevenChecks
             {
                 if (Commands[command]()) { body.linearVelocity = new Vector2(0f, body.linearVelocity.y); command++; }
                 return;
+            }
+            if (player.GetComponent<ForestioFrameAnimation>() != null)
+            {
+                Require(CatFrames.Contains(4) && CatFrames.Contains(5) && CatFrames.Contains(9) && CatFrames.Contains(10)
+                    && CatFrames.Contains(12) && CatFrames.Contains(14), "Cat walk, jump or throw frames did not animate.");
+                Require(RobotFrames.Contains(4) && RobotFrames.Contains(7), "Robot power-down did not animate.");
+                Debug.Log("FORESTIO_ANIMATION_CHECK_OK: actual walk, jump, throw and robot shutdown frames observed.");
             }
             Debug.Log("FORESTIO_STAGE11_PLAYCHECK_OK: both branches, all three piles, platform jumps, pit round trip, button, robot hit, actual ability pickup, charged gate and final landing verified.");
             if (SessionState.GetBool(PortalCheckKey, false))

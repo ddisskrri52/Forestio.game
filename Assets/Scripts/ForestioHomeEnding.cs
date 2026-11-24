@@ -6,6 +6,7 @@ public sealed class ForestioHomeEnding : MonoBehaviour
     public const float Duration = 4.8f;
     [SerializeField] private Texture2D room;
     [SerializeField] private Sprite walkingCat;
+    [SerializeField] private Sprite[] walkingFrames;
     [SerializeField] private Sprite restingCat;
     private float startedAt;
     private RectTransform canvas, roomGroup;
@@ -54,6 +55,8 @@ public sealed class ForestioHomeEnding : MonoBehaviour
         float walkingWidth = width * 0.14f, walkingHeight = walkingWidth * walkingCat.rect.height / walkingCat.rect.width;
         float bob = Mathf.Sin(t * 14f) * 1.5f * s * (1f - progress);
         ForestioUi.Place(walking.rectTransform, new Rect(width * Mathf.Lerp(-0.13f, 0.67f, progress) - walkingWidth * 0.5f, height * 0.85f - walkingHeight + bob, walkingWidth, walkingHeight));
+        if (walkingFrames != null && walkingFrames.Length > 0)
+            walking.sprite = walkingFrames[(int)(t * 10f) % walkingFrames.Length];
         walking.color = new Color(1f, 1f, 1f, 1f - settle);
         float restingWidth = width * 0.11f, restingHeight = restingWidth * restingCat.rect.height / restingCat.rect.width;
         ForestioUi.Place(resting.rectTransform, new Rect(width * 0.67f - restingWidth * 0.5f, height * 0.85f - restingHeight, restingWidth, restingHeight));

@@ -27,7 +27,11 @@ public sealed class ForestioHitButton : MonoBehaviour
     {
         IsActivated = false;
         visual.color = initialColor;
-        if (door != null) door.SetActive(true);
+        if (door != null)
+        {
+            var gate = door.GetComponent<ForestioVineGate>();
+            if (gate != null) gate.ResetClosed(); else door.SetActive(true);
+        }
     }
 
     private void OnTriggerEnter2D(Collider2D other)
@@ -40,7 +44,8 @@ public sealed class ForestioHitButton : MonoBehaviour
             return;
 
         IsActivated = true;
-        door.SetActive(false);
+        var gate = door.GetComponent<ForestioVineGate>();
+        if (gate != null) gate.Open(); else door.SetActive(false);
         visual.color = activatedColor;
         projectile.ConsumeOnHit();
     }

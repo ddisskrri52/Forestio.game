@@ -17,9 +17,14 @@ public static class ForestioHazardContactChecks
     private static float startedAt;
     private static double timeout;
     static ForestioHazardContactChecks() => EditorApplication.update += Tick;
+    public static void RunReadableLevel()
+    {
+        SessionState.SetBool("Forestio.HazardContactOutskirts", true);
+        Run();
+    }
     public static void Run()
     {
-        EditorSceneManager.OpenScene("Assets/Scenes/ForestTest.unity", OpenSceneMode.Single);
+        EditorSceneManager.OpenScene(SessionState.GetBool("Forestio.HazardContactOutskirts", false) ? ForestioStageElevenSetup.LevelPath : "Assets/Scenes/ForestTest.unity", OpenSceneMode.Single);
         SessionState.SetBool(Key, true);
         EditorApplication.EnterPlaymode();
     }
@@ -48,7 +53,7 @@ public static class ForestioHazardContactChecks
                 // hazard triggers, safe-point tracking and health remain enabled.
                 player.enabled = false;
                 UnityEngine.Object.FindFirstObjectByType<ForestioRobotController>().DisableRobot();
-                Place(2f);
+                Place(SessionState.GetBool("Forestio.HazardContactOutskirts", false) ? -10f : 2f);
                 startedAt = Time.time;
                 initialized = true;
             }
@@ -61,6 +66,7 @@ public static class ForestioHazardContactChecks
             {
                 if (!sawTwoHp || !sawOneHp) throw new Exception("Sustained spike damage skipped HP states.");
                 Debug.Log("FORESTIO_SPIKES_HOLD_CHECK_OK: continuous movement into real spikes caused 3 -> 2 -> 1 -> 0 HP and respawn; invulnerability did not refresh forever.");
+                SessionState.SetBool("Forestio.HazardContactOutskirts", false);
                 SessionState.SetBool(Key, false);
                 EditorApplication.Exit(0);
             }
