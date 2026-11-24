@@ -10,6 +10,9 @@ public sealed class ForestioRobotController : MonoBehaviour
     private Rigidbody2D body;
     private BoxCollider2D robotCollider;
     private SpriteRenderer visual;
+    private Vector3 startPosition;
+    private Color initialColor;
+    private Color initialEyeColor;
     private float direction = 1f;
     private float resumeAt;
 
@@ -20,6 +23,9 @@ public sealed class ForestioRobotController : MonoBehaviour
         body = GetComponent<Rigidbody2D>();
         robotCollider = GetComponent<BoxCollider2D>();
         visual = GetComponent<SpriteRenderer>();
+        startPosition = transform.position;
+        if (visual != null) initialColor = visual.color;
+        if (eye != null) initialEyeColor = eye.color;
         body.bodyType = RigidbodyType2D.Dynamic;
         body.gravityScale = 3f;
         body.linearDamping = 0f;
@@ -82,6 +88,21 @@ public sealed class ForestioRobotController : MonoBehaviour
             return true;
         }
         return false;
+    }
+
+    public void ResetAfterDefeat()
+    {
+        gameObject.SetActive(true);
+        transform.position = startPosition;
+        body.position = startPosition;
+        body.simulated = true;
+        body.linearVelocity = Vector2.zero;
+        robotCollider.enabled = true;
+        direction = 1f;
+        resumeAt = Time.time + turnPause;
+        IsDisabled = false;
+        if (visual != null) visual.color = initialColor;
+        if (eye != null) eye.color = initialEyeColor;
     }
 
     public void DisableRobot()

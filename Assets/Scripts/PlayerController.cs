@@ -33,6 +33,7 @@ public sealed class ForestioPlayerController : MonoBehaviour
     private float chargeStartedAt;
 
     private readonly ContactPoint2D[] contacts = new ContactPoint2D[16];
+    private ForestioPlayerHealth health;
     private Rigidbody2D body;
     private SpriteRenderer visual;
     private float moveInput;
@@ -51,6 +52,7 @@ public sealed class ForestioPlayerController : MonoBehaviour
 
     private void Awake()
     {
+        health = GetComponent<ForestioPlayerHealth>();
         body = GetComponent<Rigidbody2D>();
         visual = GetComponentInChildren<SpriteRenderer>();
 
@@ -75,7 +77,8 @@ public sealed class ForestioPlayerController : MonoBehaviour
     private void Update()
     {
         Keyboard keyboard = Keyboard.current;
-        if (keyboard == null || !Application.isFocused || Time.timeScale == 0f || Time.frameCount <= ignoreInputThroughFrame)
+        if (keyboard == null || !Application.isFocused || Time.timeScale == 0f || Time.frameCount <= ignoreInputThroughFrame
+            || (health != null && health.MovementLocked))
         {
             moveInput = 0f;
             jumpRequested = false;
@@ -109,6 +112,11 @@ public sealed class ForestioPlayerController : MonoBehaviour
 
     private void FixedUpdate()
     {
+        if (health != null && health.MovementLocked)
+        {
+            jumpRequested = false;
+            return;
+        }
         Vector2 velocity = body.linearVelocity;
         velocity.x = moveInput * (isCharging ? chargingMoveSpeed : moveSpeed);
 
