@@ -27,6 +27,7 @@ public sealed class ForestioPlayerController : MonoBehaviour
     [SerializeField, Min(0.1f)] private float chargedThrowDistance = 16f;
     [SerializeField] private Color fullChargeColor = new Color(1f, 0.85f, 0.4f, 1f);
 
+    private ForestioStonePile[] stonePiles;
     private SpriteRenderer heldStoneRenderer;
     private Color normalStoneColor = Color.white;
     private bool isCharging;
@@ -52,6 +53,7 @@ public sealed class ForestioPlayerController : MonoBehaviour
 
     private void Awake()
     {
+        stonePiles = FindObjectsByType<ForestioStonePile>(FindObjectsInactive.Include, FindObjectsSortMode.None);
         health = GetComponent<ForestioPlayerHealth>();
         body = GetComponent<Rigidbody2D>();
         visual = GetComponentInChildren<SpriteRenderer>();
@@ -147,12 +149,22 @@ public sealed class ForestioPlayerController : MonoBehaviour
 
     private void TryPickUpStone()
     {
-        if (HasStone || stonePile == null || heldStone == null || !stonePile.gameObject.activeInHierarchy)
-            return;
-
-        Vector2 difference = (Vector2)stonePile.position - (Vector2)transform.position;
-        if (difference.sqrMagnitude > pickupDistance * pickupDistance)
-            return;
+        if (HasStone || heldStone == null) return;
+        float nearestSquared = pickupDistance * pickupDistance;
+        Transform nearest = null;
+        foreach (ForestioStonePile pile in stonePiles)
+        {
+            if (pile == null || !pile.IsAvailable) continue;
+            float squared = ((Vector2)pile.transform.position - (Vector2)transform.position).sqrMagnitude;
+            if (squared > nearestSquared) continue;
+            nearestSquared = squared;
+            nearest = pile.transform;
+        }
+        // Keep old mechanic-test scenes working with their original single-pile reference.
+        if (stonePiles.Length == 0 && nearest == null && stonePile != null && stonePile.gameObject.activeInHierarchy
+            && ((Vector2)stonePile.position - (Vector2)transform.position).sqrMagnitude <= nearestSquared)
+            nearest = stonePile;
+        if (nearest == null) return;
 
         HasStone = true;
         PositionHeldStone();
