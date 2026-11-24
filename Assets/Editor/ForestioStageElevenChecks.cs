@@ -24,8 +24,12 @@ public static class ForestioStageElevenChecks
     private static bool initialized;
 
     static ForestioStageElevenChecks() => EditorApplication.update += Tick;
-    public static void Run()
+    private const string PortalCheckKey = "Forestio.Stage12.CheckPortal";
+    public static void Run() => StartChecks(false);
+    public static void RunToPortal() => StartChecks(true);
+    private static void StartChecks(bool checkPortal)
     {
+        SessionState.SetBool(PortalCheckKey, checkPortal);
         EditorSceneManager.OpenScene(ForestioStageElevenSetup.LevelPath, OpenSceneMode.Single);
         SessionState.SetBool(RunningKey, true);
         EditorApplication.EnterPlaymode();
@@ -95,6 +99,11 @@ public static class ForestioStageElevenChecks
     {
         Require(UnityEngine.Object.FindObjectsByType<ForestioStonePile>(FindObjectsSortMode.None).Length == 3, "Expected three piles.");
         Require(!player.HasChargedThrow && !button.IsActivated && !barrier.IsBroken, "Level did not start locked.");
+        if (SessionState.GetBool(PortalCheckKey, false))
+        {
+            ForestioPortal portal = UnityEngine.Object.FindFirstObjectByType<ForestioPortal>();
+            Require(portal != null && !portal.TryEnter(player), "Portal allowed early completion.");
+        }
         // Drive the same velocity/jump height as the controller, independent of editor focus.
         // Disable the robot for navigation first, then restore it for a real projectile hit.
         player.enabled = false;
@@ -127,6 +136,8 @@ public static class ForestioStageElevenChecks
         Do(() =>
         {
             Require(player.HasChargedThrow, "Actual module trigger did not unlock ability.");
+            if (SessionState.GetBool(PortalCheckKey, false))
+                Require(!UnityEngine.Object.FindFirstObjectByType<ForestioPortal>().TryEnter(player), "Portal allowed completion before branches were broken.");
             Require(Camera.main.transform.position.x > 10f, "Camera did not follow into module branch.");
             CheckCamera();
         });
@@ -138,7 +149,7 @@ public static class ForestioStageElevenChecks
         Move("return to ability gate", -7.8f, 2f);
         Throw(true, true); Wait(0.3f);
         Do(() => Require(barrier.IsBroken, "Charged throw did not open final path."));
-        Move("final landing", -15f, 2f);
+        Move("final landing", -13.3f, 2f);
         Wait(0.5f);
         Do(() =>
         {
@@ -146,6 +157,29 @@ public static class ForestioStageElevenChecks
             CheckCamera();
             Require(health.CurrentHealth == 3, "Route caused unexpected damage.");
         });
+        if (SessionState.GetBool(PortalCheckKey, false))
+        {
+            float enterDeadline = -1f;
+            Commands.Add(() =>
+            {
+                if (enterDeadline < 0f) enterDeadline = Time.unscaledTime + 3f;
+                Require(Time.unscaledTime < enterDeadline, "Entering portal timed out.");
+                ForestioLevelCompletion ending = UnityEngine.Object.FindFirstObjectByType<ForestioLevelCompletion>();
+                if (ending.IsCompleted)
+                {
+                    Require(Time.timeScale == 0f && !player.enabled && !player.IsCharging, "Ending did not stop gameplay.");
+                    Require(body.linearVelocity.sqrMagnitude < 0.001f, "Cat kept moving after completion.");
+                    int hp = health.CurrentHealth;
+                    Require(!health.TryTakeDamage(Vector2.zero), "Cat took damage during ending.");
+                    health.ReturnFromHazard();
+                    Require(health.CurrentHealth == hp && !health.IsReturningFromHazard, "Hazard interrupted ending.");
+                    Require(!ending.TryComplete(player), "Ending triggered twice.");
+                    return true;
+                }
+                body.linearVelocity = new Vector2(-5f, body.linearVelocity.y);
+                return false;
+            });
+        }
     }
     private static void CheckCamera()
     {
@@ -188,6 +222,15 @@ public static class ForestioStageElevenChecks
                 return;
             }
             Debug.Log("FORESTIO_STAGE11_PLAYCHECK_OK: both branches, all three piles, platform jumps, pit round trip, button, robot hit, actual ability pickup, charged gate and final landing verified.");
+            if (SessionState.GetBool(PortalCheckKey, false))
+            {
+                ForestioLevelCompletion ending = UnityEngine.Object.FindFirstObjectByType<ForestioLevelCompletion>();
+                Require(ending != null && ending.IsCompleted, "Portal route ended without completion.");
+                ending.enabled = false;
+                Require(Time.timeScale == 1f, "Completion left global time paused after teardown.");
+                Debug.Log("FORESTIO_STAGE12_PLAYCHECK_OK: full route entered actual portal trigger; early completion rejected, gameplay frozen, damage blocked and time restored on teardown.");
+                SessionState.SetBool(PortalCheckKey, false);
+            }
             SessionState.SetBool(RunningKey, false);
             EditorApplication.Exit(0);
         }
