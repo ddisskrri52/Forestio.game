@@ -124,7 +124,7 @@ public static class ForestioStageElevenChecks
         Move("start pile", -14.3f, -2.5f); Pickup();
         Move("training jump", -11.8f, -1f);
         Move("ground before spikes", -10f, -2.5f);
-        Move("jump over spikes", -7f, -2.5f, true);
+        Move("jump over spikes", -6.7f, -2.5f, true);
         Move("central junction", 0.2f, -2.5f);
         Move("left first step", -2.5f, -1f);
         Move("left second step", -5.3f, 0.5f);
@@ -140,7 +140,7 @@ public static class ForestioStageElevenChecks
         Do(() => Require(button.IsActivated && UnityEngine.Object.FindFirstObjectByType<ForestioVineGate>().IsOpen, "Button did not open module route."));
         Move("descend from button", 6f, 0.5f);
         Move("return to lower junction", 0.2f, -2.5f);
-        Move("third pile before pit", 11f, -2.5f); Pickup();
+        Move("third pile before pit", 11.5f, -2.5f); Pickup();
         Do(() => robot.ResetAfterDefeat());
         Throw(false, false); Wait(0.8f);
         Do(() => Require(robot.IsDisabled, "Stone did not disable robot across pit."));
@@ -156,7 +156,7 @@ public static class ForestioStageElevenChecks
             CheckCamera();
         });
         Move("return to pit", 15f, -2.5f);
-        Move("jump back across pit", 11f, -2.5f, true);
+        Move("jump back across pit", 11.5f, -2.5f, true);
         Move("return to central junction", 0.2f, -2.5f);
         Move("final first step", -2.5f, -1f);
         Move("final second step", -5.3f, 0.5f);
@@ -345,7 +345,7 @@ public static class ForestioStageElevenChecks
             if (player.GetComponent<ForestioFrameAnimation>() != null)
             {
                 Require(CatFrames.Contains(4) && CatFrames.Contains(5) && CatFrames.Contains(9) && CatFrames.Contains(10)
-                    && CatFrames.Contains(12) && CatFrames.Contains(14), "Cat walk, jump or throw frames did not animate.");
+                    && CatFrames.Contains(14) && CatFrames.Contains(15), "Cat walk, jump or throw frames did not animate.");
                 Require(RobotFrames.Contains(4) && RobotFrames.Contains(7), "Robot power-down did not animate.");
                 Debug.Log("FORESTIO_ANIMATION_CHECK_OK: actual walk, jump, throw and robot shutdown frames observed.");
             }

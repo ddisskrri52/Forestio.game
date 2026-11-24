@@ -16,6 +16,7 @@ public sealed class ForestioBranchBarrier : MonoBehaviour
         }
 
         IsBroken = true;
+        ForestioWoodFragment.Burst(GetComponent<SpriteRenderer>());
         projectile.ConsumeOnHit();
         gameObject.SetActive(false);
         return true;

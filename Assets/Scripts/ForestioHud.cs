@@ -21,7 +21,7 @@ public sealed class ForestioHud : MonoBehaviour
     public bool PickupHintVisible => player != null && player.CanPickUpStone && Time.timeScale > 0f
         && (notice == null || !notice.IsOpen) && (completion == null || !completion.IsCompleted);
     public string ObjectiveText => branches != null && branches.IsBroken ? "До телепорту ←"
-        : player != null && player.HasChargedThrow ? "Повернися до гілок ←"
+        : player != null && player.HasChargedThrow ? "Повернися до завалу ←"
         : button != null && button.IsActivated ? "Знайди жовтий модуль →" : "Знайди кнопку ↑ →";
     private void Start()
     {
@@ -78,7 +78,7 @@ public sealed class ForestioHud : MonoBehaviour
         Vector3 p = player.transform.position;
         if (!jumped && p.x < -10.5f) return "Стрибок — Space";
         if (branches != null && !branches.IsBroken && Vector2.Distance(p, branches.transform.position - Vector3.up * 2.5f) < 3f)
-            return player.HasChargedThrow ? "Утримуй ЛКМ/F 0,7 с і відпусти в бік гілок." : "Шлях закритий. Досліди гілку праворуч.";
+            return player.HasChargedThrow ? "Утримуй ЛКМ/F 0,7 с і відпусти в бік колод." : "Шлях закритий. Досліди гілку праворуч.";
         if (button != null && !button.IsActivated && Vector2.Distance(p, button.transform.position) < 3f) return "ЛКМ/F — влуч камінцем у кнопку.";
         if (p.x > -10.6f && p.x < -7f && p.y < -1f) return "Space — перестрибни шипи.";
         if (p.x > 10f && p.x < 15f && p.y < 0f) return "Space — перестрибни яму.";

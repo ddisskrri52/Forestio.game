@@ -13,13 +13,13 @@ Sprite:
     y: 256
     width: 384
     height: 256
-  m_Offset: {x: 0, y: 56}
+  m_Offset: {x: 0, y: 26.230774}
   m_Border: {x: 0, y: 0, z: 0, w: 0}
-  m_PixelsToUnits: 300
-  m_Pivot: {x: 0.5, y: 0.71875}
+  m_PixelsToUnits: 230.76924
+  m_Pivot: {x: 0.5, y: 0.60246396}
   m_Extrude: 0
   m_IsPolygon: 0
-  m_PackingTag:
+  m_PackingTag: 
   m_RenderDataKey:
     9373a421ba4bf58488fa9684021f08bd: 21300000
   m_AtlasTags: []
@@ -102,7 +102,7 @@ Sprite:
         format: 0
         dimension: 0
       m_DataSize: 80
-      _typelessdata: 0ad723bf8fc2753e000000000ad7233f8fc2753e000000000ad723bf6a031dbf000000000ad7233f6a031dbf000000000000000000000000000000000000000000000000000000000000000000000000
+      _typelessdata: f3fd54bfbfcae13e00000000f3fd543fbfcae13e00000000f3fd54bfe5172bbf00000000f3fd543fe5172bbf000000000000000000000000000000000000000000000000000000000000000000000000
     m_Bindpose: []
     textureRect:
       serializedVersion: 2
@@ -113,7 +113,7 @@ Sprite:
     textureRectOffset: {x: 0, y: 0}
     atlasRectOffset: {x: -1, y: -1}
     settingsRaw: 0
-    uvTransform: {x: 300, y: 960, z: 300, w: 440}
+    uvTransform: {x: 230.76924, y: 960, z: 230.76924, w: 410.23077}
     downscaleMultiplier: 1
   m_AtlasRD:
     serializedVersion: 3
@@ -193,7 +193,7 @@ Sprite:
         format: 0
         dimension: 0
       m_DataSize: 80
-      _typelessdata: 0ad723bf8fc2753e000000000ad7233f8fc2753e000000000ad723bf6a031dbf000000000ad7233f6a031dbf000000000000000000000000000000000000000000000000000000000000000000000000
+      _typelessdata: f3fd54bfbfcae13e00000000f3fd543fbfcae13e00000000f3fd54bfe5172bbf00000000f3fd543fe5172bbf000000000000000000000000000000000000000000000000000000000000000000000000
     m_Bindpose: []
     textureRect:
       serializedVersion: 2
@@ -204,9 +204,9 @@ Sprite:
     textureRectOffset: {x: 0, y: 0}
     atlasRectOffset: {x: -1, y: -1}
     settingsRaw: 0
-    uvTransform: {x: 300, y: 960, z: 300, w: 440}
+    uvTransform: {x: 230.76924, y: 960, z: 230.76924, w: 410.23077}
     downscaleMultiplier: 1
   m_PhysicsShape: []
   m_Bones: []
   m_ScriptableObjects: []
-  m_SpriteID:
+  m_SpriteID: 

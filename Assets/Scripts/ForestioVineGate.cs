@@ -24,9 +24,9 @@ public sealed class ForestioVineGate : MonoBehaviour
     private void Place()
     {
         if (left == null || right == null) return;
-        float offset = Mathf.SmoothStep(0f, 0.95f, progress);
-        left.localPosition = new Vector3(-0.4f - offset, 0f, 0f);
-        right.localPosition = new Vector3(0.4f + offset, 0f, 0f);
+        float height = Mathf.SmoothStep(0f, 2.6f, progress);
+        left.localPosition = new Vector3(-0.4f, height, 0f);
+        right.localPosition = new Vector3(0.4f, height, 0f);
         left.gameObject.SetActive(progress < 1f); right.gameObject.SetActive(progress < 1f);
     }
 }

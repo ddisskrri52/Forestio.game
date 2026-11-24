@@ -35,6 +35,22 @@ public sealed class ForestioVisualCapture : MonoBehaviour
         body.simulated = true;
         yield return new WaitForSecondsRealtime(1f);
         yield return Save("start");
+        player.SendMessage("TryPickUpStone", SendMessageOptions.RequireReceiver);
+        ForestioFrameAnimation animation = player.GetComponent<ForestioFrameAnimation>();
+        animation.enabled = false;
+        var setFrame = typeof(ForestioFrameAnimation).GetMethod("SetFrame", BindingFlags.NonPublic | BindingFlags.Instance);
+        foreach (int frame in new[] { 0, 4, 5, 9, 10, 14 })
+        {
+            setFrame.Invoke(animation, new object[] { frame });
+            player.SendMessage("PositionHeldStone", SendMessageOptions.RequireReceiver);
+            yield return Save("mouth-right-" + frame);
+            player.GetComponent<SpriteRenderer>().flipX = true;
+            player.SendMessage("PositionHeldStone", SendMessageOptions.RequireReceiver);
+            yield return Save("mouth-left-" + frame);
+            player.GetComponent<SpriteRenderer>().flipX = false;
+        }
+        animation.enabled = true;
+        player.TryConsumeStone();
         body.position = new Vector2(-10f, -2.04f); body.linearVelocity = Vector2.zero;
         yield return new WaitForSecondsRealtime(0.8f);
         yield return Save("spikes");
@@ -43,7 +59,7 @@ public sealed class ForestioVisualCapture : MonoBehaviour
         yield return Save("junction");
         body.position = new Vector2(8f, -2.04f); body.linearVelocity = Vector2.zero;
         yield return new WaitForSecondsRealtime(0.8f);
-        yield return Save("vines-closed");
+        yield return Save("shutter-closed");
         player.transform.position = new Vector3(8f, 2.44f, 0f);
         yield return new WaitForSecondsRealtime(0.8f);
         yield return Save("button");
@@ -53,7 +69,7 @@ public sealed class ForestioVisualCapture : MonoBehaviour
         yield return new WaitForSecondsRealtime(0.8f);
         body.position = new Vector2(8f, -2.04f); body.linearVelocity = Vector2.zero;
         yield return new WaitForSecondsRealtime(0.8f);
-        yield return Save("vines-open");
+        yield return Save("shutter-open");
         FindFirstObjectByType<ForestioRobotController>().DisableRobot();
         body.position = new Vector2(16f, -2.04f); body.linearVelocity = Vector2.zero;
         yield return new WaitForSecondsRealtime(0.6f);

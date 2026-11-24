@@ -1,0 +1,11 @@
+{
+  "mode": "builtin image_gen",
+  "barrier": {
+    "path": "Assets/Art/Revision/CrackedLogs.png",
+    "prompt": "Use case: illustration-story. Asset: one standalone destructible wooden barricade sprite for a friendly pastel forest 2D platform game. A COMPACT STACK of three or four thick broken wooden logs blocking a trail, composed vertically in a portrait 1:2 aspect. Warm chestnut and muted rose-brown bark, big obvious light tan jagged CRACKS through the middle so it immediately reads as breakable wood. Strong dark plum outline, clear silhouette, clean hand-drawn cartoon style matching cozy pink-lavender forests. Solid stacked logs from bottom to top, no doorway, no tree canopy, NO leaves, NO vines, NO thin branches, no thorns, no stone, no characters, no writing, no scene background. Fully transparent alpha outside the log pile, no ground shadow, generous small transparent margins. Intended to be displayed around 1.5 units wide and 2.8 units high, so logs need bold simple details and obvious cracks."
+  },
+  "gate": {
+    "path": "Assets/Art/Revision/WoodenShutter.png",
+    "prompt": "Use case: illustration-story. Asset: ONE simple wooden sliding gate panel for a 2D pastel forest game. Tall portrait aspect 2:3. Exactly three broad vertical wooden planks held by two simple horizontal wood braces. Warm muted chestnut and rose-brown wood with a strong dark plum outline, simple clean hand-drawn cartoon rendering. Straight rectangular silhouette, no arch frame, no handles, no locks, no vines, NO LEAVES, no flowers, no symbols or text, no cracks suggesting breakable object. No scene background, fully transparent alpha around the wooden rectangle. Large clear shapes readable at small game size. This panel will rise vertically inside a hollow tree when a button is activated."
+  }
+}

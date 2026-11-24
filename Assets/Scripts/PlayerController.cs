@@ -37,6 +37,7 @@ public sealed class ForestioPlayerController : MonoBehaviour
     private ForestioPlayerHealth health;
     private Rigidbody2D body;
     private SpriteRenderer visual;
+    private ForestioFrameAnimation frameAnimation;
     private float moveInput;
     private bool jumpRequested;
 
@@ -60,6 +61,7 @@ public sealed class ForestioPlayerController : MonoBehaviour
         health = GetComponent<ForestioPlayerHealth>();
         body = GetComponent<Rigidbody2D>();
         visual = GetComponentInChildren<SpriteRenderer>();
+        frameAnimation = GetComponent<ForestioFrameAnimation>();
 
         HasStone = false;
         chargedThrowUnlocked = false;
@@ -106,7 +108,7 @@ public sealed class ForestioPlayerController : MonoBehaviour
 
         HandleThrowInput(keyboard);
         if (heldStoneRenderer != null)
-            heldStoneRenderer.color = isCharging && ChargeProgress >= 1f ? fullChargeColor : normalStoneColor;
+            heldStoneRenderer.color = isCharging ? Color.Lerp(normalStoneColor, fullChargeColor, ChargeProgress) : normalStoneColor;
     }
 
     private void LateUpdate()
@@ -184,7 +186,8 @@ public sealed class ForestioPlayerController : MonoBehaviour
     private void PositionHeldStone()
     {
         float direction = visual != null && visual.flipX ? -1f : 1f;
-        Vector3 offset = new Vector3(Mathf.Abs(mouthOffset.x) * direction, mouthOffset.y, 0f);
+        Vector2 anchor = frameAnimation != null && frameAnimation.HasMouthOffsets ? frameAnimation.MouthOffset : mouthOffset;
+        Vector3 offset = new Vector3(anchor.x * direction, anchor.y, 0f);
         heldStone.transform.position = transform.TransformPoint(offset);
     }
 
@@ -226,6 +229,7 @@ public sealed class ForestioPlayerController : MonoBehaviour
         if (!HasStone || heldStone == null || projectilePrefab == null)
             return;
 
+        if (frameAnimation != null) frameAnimation.PrepareThrowPose();
         PositionHeldStone();
         float direction = visual != null && visual.flipX ? -1f : 1f;
         ForestioStoneProjectile projectile = Instantiate(projectilePrefab, heldStone.transform.position, Quaternion.identity);
