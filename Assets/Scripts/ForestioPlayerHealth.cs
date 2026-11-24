@@ -17,8 +17,9 @@ public sealed class ForestioPlayerHealth : MonoBehaviour
 
     public int CurrentHealth { get; private set; } = MaxHealth;
     public bool IsDefeated { get; private set; }
-    public bool IsInvulnerable => IsDefeated || Time.time < invulnerableUntil;
-    public bool MovementLocked => IsDefeated || Time.time < movementLockedUntil;
+    public bool IsReturningFromHazard { get; private set; }
+    public bool IsInvulnerable => IsDefeated || IsReturningFromHazard || Time.time < invulnerableUntil;
+    public bool MovementLocked => IsDefeated || IsReturningFromHazard || Time.time < movementLockedUntil;
 
     private void Awake()
     {
@@ -56,11 +57,7 @@ public sealed class ForestioPlayerHealth : MonoBehaviour
         movementLockedUntil = Time.time + 0.2f;
         if (CurrentHealth == 0)
         {
-            IsDefeated = true;
-            body.linearVelocity = Vector2.zero;
-            body.simulated = false;
-            player.TryConsumeStone();
-            StartCoroutine(Respawn());
+            BeginDefeat();
         }
         else
         {
@@ -70,9 +67,62 @@ public sealed class ForestioPlayerHealth : MonoBehaviour
         return true;
     }
 
+    private void BeginDefeat()
+    {
+        IsDefeated = true;
+        body.linearVelocity = Vector2.zero;
+        body.simulated = false;
+        player.TryConsumeStone();
+        StartCoroutine(Respawn());
+    }
+
+    public void ReturnFromHazard()
+    {
+        if (IsDefeated || IsReturningFromHazard || Time.timeScale == 0f) return;
+        if (!IsInvulnerable) CurrentHealth--;
+        player.ClearPendingInput();
+        if (CurrentHealth == 0)
+        {
+            BeginDefeat();
+            return;
+        }
+        IsReturningFromHazard = true;
+        body.linearVelocity = Vector2.zero;
+        body.simulated = false;
+        StartCoroutine(ReturnToSafePoint());
+    }
+
+    private IEnumerator ReturnToSafePoint()
+    {
+        yield return FadeTo(1f, 0.15f);
+        ForestioSafePoint safePoint = GetComponent<ForestioSafePoint>();
+        Vector3 target = safePoint != null ? safePoint.SafePosition : startPosition;
+        transform.position = target;
+        body.position = target;
+        yield return FadeTo(0f, 0.15f);
+        body.simulated = true;
+        body.linearVelocity = Vector2.zero;
+        IsReturningFromHazard = false;
+        invulnerableUntil = Time.time + 1f;
+        movementLockedUntil = Time.time;
+        player.ClearPendingInput();
+    }
+
+    private IEnumerator FadeTo(float target, float duration)
+    {
+        float initial = fade;
+        float started = Time.time;
+        while (Time.time - started < duration)
+        {
+            fade = Mathf.Lerp(initial, target, (Time.time - started) / duration);
+            yield return null;
+        }
+        fade = target;
+    }
+
     public bool TryHeal()
     {
-        if (IsDefeated || CurrentHealth >= MaxHealth) return false;
+        if (IsDefeated || IsReturningFromHazard || CurrentHealth >= MaxHealth) return false;
         CurrentHealth++;
         return true;
     }
@@ -98,6 +148,8 @@ public sealed class ForestioPlayerHealth : MonoBehaviour
         foreach (ForestioFood food in FindObjectsByType<ForestioFood>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             food.ResetAfterDefeat();
 
+        ForestioSafePoint safePoint = GetComponent<ForestioSafePoint>();
+        if (safePoint != null) safePoint.ResetToStart();
         transform.position = startPosition;
         body.position = startPosition;
         CurrentHealth = MaxHealth;
