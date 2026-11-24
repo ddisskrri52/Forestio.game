@@ -5,6 +5,7 @@ using UnityEngine;
 public sealed class ForestioPlayerHealth : MonoBehaviour
 {
     public const int MaxHealth = 3;
+    [SerializeField] private bool showHealthText = true;
     private ForestioPlayerController player;
     private Rigidbody2D body;
     private SpriteRenderer visual;
@@ -178,7 +179,8 @@ public sealed class ForestioPlayerHealth : MonoBehaviour
             healthStyle = new GUIStyle(GUI.skin.label) { fontSize = 24, fontStyle = FontStyle.Bold };
             healthStyle.normal.textColor = new Color(1f, 0.85f, 0.91f);
         }
-        GUI.Label(new Rect(20f, 15f, 180f, 40f), "HP: " + CurrentHealth + " / " + MaxHealth, healthStyle);
+        if (showHealthText)
+            GUI.Label(new Rect(20f, 15f, 180f, 40f), "HP: " + CurrentHealth + " / " + MaxHealth, healthStyle);
         if (fade <= 0f) return;
         Color previous = GUI.color;
         int previousDepth = GUI.depth;

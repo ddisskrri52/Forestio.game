@@ -22,14 +22,20 @@ public static class ForestioStageElevenChecks
     private static int command;
     private static double timeout;
     private static bool initialized;
+    private const string RestartCheckKey = "Forestio.Stage13.CheckRestart";
+    private static int restartStage;
+    private static int oldPlayerId;
+    private static float restartedAt = -1f;
 
     static ForestioStageElevenChecks() => EditorApplication.update += Tick;
     private const string PortalCheckKey = "Forestio.Stage12.CheckPortal";
     public static void Run() => StartChecks(false);
     public static void RunToPortal() => StartChecks(true);
-    private static void StartChecks(bool checkPortal)
+    public static void RunWithRestart() => StartChecks(true, true);
+    private static void StartChecks(bool checkPortal, bool checkRestart = false)
     {
         SessionState.SetBool(PortalCheckKey, checkPortal);
+        SessionState.SetBool(RestartCheckKey, checkRestart);
         EditorSceneManager.OpenScene(ForestioStageElevenSetup.LevelPath, OpenSceneMode.Single);
         SessionState.SetBool(RunningKey, true);
         EditorApplication.EnterPlaymode();
@@ -79,8 +85,12 @@ public static class ForestioStageElevenChecks
         Do(() =>
         {
             Require(!player.HasStone, "Pickup check began with a held stone.");
+            ForestioHud hud = UnityEngine.Object.FindFirstObjectByType<ForestioHud>();
+            if (SessionState.GetBool(RestartCheckKey, false))
+                Require(hud != null && hud.PickupHintVisible, "Pickup hint missing near available pile.");
             player.SendMessage("TryPickUpStone", SendMessageOptions.RequireReceiver);
             Require(player.HasStone, "Nearby pile did not give a stone at " + body.position);
+            if (hud != null) Require(!hud.PickupHintVisible, "Pickup hint remained after taking stone.");
         });
     }
     private static void Throw(bool left, bool charged)
@@ -149,6 +159,15 @@ public static class ForestioStageElevenChecks
         Move("return to ability gate", -7.8f, 2f);
         Throw(true, true); Wait(0.3f);
         Do(() => Require(barrier.IsBroken, "Charged throw did not open final path."));
+        if (SessionState.GetBool(RestartCheckKey, false))
+        {
+            // Carry a fresh stone into the ending so restart must reset inventory too.
+            Move("refill after opening final gate", -5.3f, 0.5f);
+            Move("refill at hub", 0.2f, -2.5f); Pickup();
+            Move("return final first step with stone", -2.5f, -1f);
+            Move("return final second step with stone", -5.3f, 0.5f);
+            Move("return final landing with stone", -7.8f, 2f);
+        }
         Move("final landing", -13.3f, 2f);
         Wait(0.5f);
         Do(() =>
@@ -174,6 +193,11 @@ public static class ForestioStageElevenChecks
                     health.ReturnFromHazard();
                     Require(health.CurrentHealth == hp && !health.IsReturningFromHazard, "Hazard interrupted ending.");
                     Require(!ending.TryComplete(player), "Ending triggered twice.");
+                    if (SessionState.GetBool(RestartCheckKey, false))
+                    {
+                        Require(player.HasStone, "Restart inventory check has no held stone.");
+                        Require(!ending.CanRestart && !ending.TryRestart(), "Restart ignored short ending delay.");
+                    }
                     return true;
                 }
                 body.linearVelocity = new Vector2(-5f, body.linearVelocity.y);
@@ -192,6 +216,51 @@ public static class ForestioStageElevenChecks
         Require(center.x - width >= -19.51f && center.x + width <= 23.51f
             && center.y - height >= -4.01f && center.y + height <= 10.01f, "Camera crossed level bounds.");
     }
+    private static void CheckRestart()
+    {
+        if (restartStage == 1)
+        {
+            ForestioLevelCompletion ending = UnityEngine.Object.FindFirstObjectByType<ForestioLevelCompletion>();
+            if (!ending.CanRestart) return;
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/StoneProjectile.prefab");
+            UnityEngine.Object.Instantiate(prefab, new Vector3(0f, 20f, 0f), Quaternion.identity);
+            Require(ending.TryRestart(), "Restart request rejected.");
+            Require(!ending.TryRestart(), "Duplicate restart request accepted.");
+            restartStage = 2;
+            return;
+        }
+        ForestioPlayerController fresh = UnityEngine.Object.FindFirstObjectByType<ForestioPlayerController>();
+        if (fresh == null || fresh.GetInstanceID() == oldPlayerId) return;
+        if (restartedAt < 0f) restartedAt = Time.unscaledTime;
+        if (Time.unscaledTime - restartedAt < 0.15f) return;
+        ForestioPlayerHealth freshHealth = fresh.GetComponent<ForestioPlayerHealth>();
+        ForestioLevelCompletion completion = UnityEngine.Object.FindFirstObjectByType<ForestioLevelCompletion>();
+        Require(Time.timeScale == 1f && fresh.enabled, "Restart left gameplay paused or input disabled.");
+        Require(freshHealth.CurrentHealth == 3 && !freshHealth.IsDefeated && !freshHealth.IsReturningFromHazard, "Restart did not reset health.");
+        Require(!fresh.HasStone && !fresh.HasChargedThrow && !fresh.IsCharging, "Restart retained inventory or ability.");
+        Require(Mathf.Abs(fresh.transform.position.x + 14.5f) < 0.05f, "Restart missed level start.");
+        Require(!completion.IsCompleted && !completion.CanRestart && !completion.TryRestart(), "Restart available outside ending.");
+        Require(!UnityEngine.Object.FindFirstObjectByType<ForestioHitButton>().IsActivated && GameObject.Find("Door") != null, "Restart retained open door.");
+        ForestioBranchBarrier freshBranches = UnityEngine.Object.FindFirstObjectByType<ForestioBranchBarrier>();
+        Require(freshBranches != null && !freshBranches.IsBroken && freshBranches.gameObject.activeSelf, "Restart retained broken branches.");
+        ForestioAbilityModule module = UnityEngine.Object.FindFirstObjectByType<ForestioAbilityModule>();
+        Require(module != null && !module.IsCollected && module.gameObject.activeSelf, "Restart did not restore module.");
+        ForestioRobotController freshRobot = UnityEngine.Object.FindFirstObjectByType<ForestioRobotController>();
+        Require(freshRobot != null && !freshRobot.IsDisabled && freshRobot.GetComponent<Collider2D>().enabled, "Restart did not restore robot.");
+        ForestioFood food = UnityEngine.Object.FindFirstObjectByType<ForestioFood>();
+        Require(food != null && !food.IsCollected && food.gameObject.activeSelf, "Restart did not restore food.");
+        Require(UnityEngine.Object.FindObjectsByType<ForestioStoneProjectile>(FindObjectsSortMode.None).Length == 0, "Restart retained projectiles.");
+        ForestioStonePile[] piles = UnityEngine.Object.FindObjectsByType<ForestioStonePile>(FindObjectsSortMode.None);
+        Require(piles.Length == 3 && Array.TrueForAll(piles, pile => pile.IsAvailable), "Restart lost stone piles.");
+        Require(!UnityEngine.Object.FindFirstObjectByType<ForestioAbilityNotice>().IsOpen, "Restart retained ability notice.");
+        Require(UnityEngine.Object.FindFirstObjectByType<ForestioHud>().PickupHintVisible, "Restart did not restore starting pickup hint.");
+        Debug.Log("FORESTIO_STAGE13_PLAYCHECK_OK: contextual pickup hints, full route, ending delay and one-shot scene restart verified; HP, input, inventory, ability, button, door, module, branches, robot, food and projectiles reset.");
+        SessionState.SetBool(RestartCheckKey, false);
+        SessionState.SetBool(PortalCheckKey, false);
+        SessionState.SetBool(RunningKey, false);
+        EditorApplication.Exit(0);
+    }
+
     private static void Tick()
     {
         if (!SessionState.GetBool(RunningKey, false)) return;
@@ -200,6 +269,7 @@ public static class ForestioStageElevenChecks
         {
             Require(EditorApplication.timeSinceStartup < timeout, "Level route checks timed out.");
             if (!EditorApplication.isPlaying || EditorApplication.isCompiling) return;
+            if (restartStage != 0) { CheckRestart(); return; }
             if (!initialized)
             {
                 player = UnityEngine.Object.FindFirstObjectByType<ForestioPlayerController>();
@@ -226,6 +296,12 @@ public static class ForestioStageElevenChecks
             {
                 ForestioLevelCompletion ending = UnityEngine.Object.FindFirstObjectByType<ForestioLevelCompletion>();
                 Require(ending != null && ending.IsCompleted, "Portal route ended without completion.");
+                if (SessionState.GetBool(RestartCheckKey, false))
+                {
+                    oldPlayerId = player.GetInstanceID();
+                    restartStage = 1;
+                    return;
+                }
                 ending.enabled = false;
                 Require(Time.timeScale == 1f, "Completion left global time paused after teardown.");
                 Debug.Log("FORESTIO_STAGE12_PLAYCHECK_OK: full route entered actual portal trigger; early completion rejected, gameplay frozen, damage blocked and time restored on teardown.");

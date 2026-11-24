@@ -53,6 +53,7 @@ public sealed class ForestioPlayerController : MonoBehaviour
 
     private void Awake()
     {
+        ignoreInputThroughFrame = Time.frameCount;
         stonePiles = FindObjectsByType<ForestioStonePile>(FindObjectsInactive.Include, FindObjectsSortMode.None);
         health = GetComponent<ForestioPlayerHealth>();
         body = GetComponent<Rigidbody2D>();
@@ -147,9 +148,12 @@ public sealed class ForestioPlayerController : MonoBehaviour
         return false;
     }
 
-    private void TryPickUpStone()
+    public Transform NearbyStonePile => FindNearbyStonePile();
+    public bool CanPickUpStone => !HasStone && heldStone != null && Time.timeScale > 0f
+        && (health == null || !health.MovementLocked) && FindNearbyStonePile() != null;
+
+    private Transform FindNearbyStonePile()
     {
-        if (HasStone || heldStone == null) return;
         float nearestSquared = pickupDistance * pickupDistance;
         Transform nearest = null;
         foreach (ForestioStonePile pile in stonePiles)
@@ -164,8 +168,12 @@ public sealed class ForestioPlayerController : MonoBehaviour
         if (stonePiles.Length == 0 && nearest == null && stonePile != null && stonePile.gameObject.activeInHierarchy
             && ((Vector2)stonePile.position - (Vector2)transform.position).sqrMagnitude <= nearestSquared)
             nearest = stonePile;
-        if (nearest == null) return;
+        return nearest;
+    }
 
+    private void TryPickUpStone()
+    {
+        if (!CanPickUpStone) return;
         HasStone = true;
         PositionHeldStone();
         heldStone.SetActive(true);
