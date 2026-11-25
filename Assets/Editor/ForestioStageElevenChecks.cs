@@ -122,10 +122,25 @@ public static class ForestioStageElevenChecks
         robot.DisableRobot();
         Wait(0.15f);
         Move("start pile", -14.3f, -2.5f); Pickup();
+        Move("walk under training ledge", -10f, -2.5f);
         Move("training jump", -11.8f, -1f);
         Move("ground before spikes", -10f, -2.5f);
         Move("jump over spikes", -6.7f, -2.5f, true);
         Move("central junction", 0.2f, -2.5f);
+        Move("walk under left steps", -5f, -2.5f);
+        Move("return under left steps", .2f, -2.5f);
+        Move("walk under right steps", 7.8f, -2.5f);
+        float pushUntil = -1f;
+        Commands.Add(() =>
+        {
+            if (pushUntil < 0f) pushUntil = Time.time + .45f;
+            body.linearVelocity = new Vector2(5f, body.linearVelocity.y);
+            if (Time.time < pushUntil) return false;
+            Require(catCollider.bounds.max.x <= 8.73f, "Closed shutter failed to block lower route.");
+            return true;
+        });
+        Move("return under right steps", .2f, -2.5f);
+        Do(() => Debug.Log("FORESTIO_CLEARANCE_CHECK_OK: walked under both branches and blocked by closed shutter."));
         Move("left first step", -2.5f, -1f);
         Move("left second step", -5.3f, 0.5f);
         Move("locked branches", -7.8f, 2f);
@@ -133,12 +148,12 @@ public static class ForestioStageElevenChecks
         Do(() => Require(!barrier.IsBroken, "Normal throw bypassed ability gate."));
         Move("return left second step", -5.3f, 0.5f);
         Move("return junction", 0.2f, -2.5f); Pickup();
-        Move("button first step", 3f, -1f);
-        Move("button second step", 6f, 0.5f);
-        Move("button landing", 8f, 2f);
+        Move("button first step", 2.2f, -1f);
+        Move("button second step", 4.4f, 0.5f);
+        Move("button landing", 6.2f, 2f);
         Throw(false, false); Wait(0.65f);
         Do(() => Require(button.IsActivated && UnityEngine.Object.FindFirstObjectByType<ForestioVineGate>().IsOpen, "Button did not open module route."));
-        Move("descend from button", 6f, 0.5f);
+        Move("descend from button", 4.4f, 0.5f);
         Move("return to lower junction", 0.2f, -2.5f);
         Move("third pile before pit", 11.5f, -2.5f); Pickup();
         Do(() => robot.ResetAfterDefeat());

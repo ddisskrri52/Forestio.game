@@ -60,11 +60,11 @@ public sealed class ForestioVisualCapture : MonoBehaviour
         body.position = new Vector2(8f, -2.04f); body.linearVelocity = Vector2.zero;
         yield return new WaitForSecondsRealtime(0.8f);
         yield return Save("shutter-closed");
-        player.transform.position = new Vector3(8f, 2.44f, 0f);
+        player.transform.position = new Vector3(6.2f, 2.44f, 0f);
         yield return new WaitForSecondsRealtime(0.8f);
         yield return Save("button");
         var stonePrefab = (ForestioStoneProjectile)typeof(ForestioPlayerController).GetField("projectilePrefab", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(player);
-        var buttonStone = Instantiate(stonePrefab, new Vector3(8.55f, 2.52f, 0f), Quaternion.identity);
+        var buttonStone = Instantiate(stonePrefab, new Vector3(6.9f, 2.52f, 0f), Quaternion.identity);
         buttonStone.Launch(1f, 12f, 9f, player.transform, false);
         yield return new WaitForSecondsRealtime(0.8f);
         body.position = new Vector2(8f, -2.04f); body.linearVelocity = Vector2.zero;

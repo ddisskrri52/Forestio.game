@@ -3,6 +3,8 @@ using UnityEngine;
 public sealed class ForestioVineGate : MonoBehaviour
 {
     public Transform left, right;
+    [SerializeField] private Vector3 leftClosed = new Vector3(-.4f, 0f, 0f);
+    [SerializeField] private Vector3 rightClosed = new Vector3(.4f, 0f, 0f);
     private float progress;
     private bool opening;
     public bool IsOpen => progress >= 1f;
@@ -25,8 +27,8 @@ public sealed class ForestioVineGate : MonoBehaviour
     {
         if (left == null || right == null) return;
         float height = Mathf.SmoothStep(0f, 2.6f, progress);
-        left.localPosition = new Vector3(-0.4f, height, 0f);
-        right.localPosition = new Vector3(0.4f, height, 0f);
+        left.localPosition = leftClosed + Vector3.up * height;
+        right.localPosition = rightClosed + Vector3.up * height;
         left.gameObject.SetActive(progress < 1f); right.gameObject.SetActive(progress < 1f);
     }
 }
